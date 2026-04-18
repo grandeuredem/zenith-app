@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#0b1f2e"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Zenith"/>
+<link rel="manifest" href="manifest.json"/>
+<title>Zenith</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #07131c;
+  --bg2: #0d1f2d;
+  --bg3: #122435;
+  --card: #0f2030;
+  --teal: #2a7a72;
+  --teal-light: #3a9688;
+  --teal-glow: rgba(42,122,114,0.25);
+  --sage: #7ec8b8;
+  --sage-dim: rgba(126,200,184,0.6);
+  --gold: #c8a96e;
+  --text: #e0f2ef;
+  --text-dim: #7a9a94;
+  --text-muted: #3a5a54;
+  --border: rgba(42,122,114,0.2);
+  --radius: 18px;
+  --transition: 0.38s cubic-bezier(0.4,0,0.2,1);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  max-width: 430px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ── NOISE OVERLAY ── */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:1000; opacity:0.4;
+}
+
+/* ── SCREENS ── */
+.screen {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  overflow-y: auto;
+  overflow-x: hidden;
+  transform: translateX(100%);
+  transition: transform var(--transition);
+  z-index: 10;
+  max-width: 430px;
+  margin: 0 auto;
+  padding-bottom: 80px;
+}
+.screen.active { transform: translateX(0); }
+.screen.slide-left { transform: translateX(-30%); }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%; max-width: 430px;
+  background: rgba(13,31,45,0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 500;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 12px 0 10px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: color 0.2s;
+  gap: 4px;
+}
+.nav-btn.active { color: var(--sage); }
+.nav-btn svg { width: 22px; height: 22px; }
+
+/* ── HAMBURGER MENU ── */
+.hamburger-btn {
+  position: absolute; top: 20px; left: 20px;
+  background: rgba(42,122,114,0.15);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 42px; height: 42px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 5px; cursor: pointer; z-index: 100;
+  transition: background 0.2s;
+}
+.hamburger-btn span {
+  width: 18px; height: 1.5px;
+  background: var(--sage); border-radius: 2px;
+  transition: all 0.3s;
+}
+
+.side-menu {
+  position: fixed; inset: 0;
+  z-index: 900;
+  pointer-events: none;
+}
+.side-menu.open { pointer-events: all; }
+
+.menu-overlay {
+  position: absolute; inset: 0;
+  background: rgba(7,19,28,0.7);
+  backdrop-filter: blur(4px);
+  opacity: 0; transition: opacity 0.3s;
+}
+.side-menu.open .menu-overlay { opacity: 1; }
+
+.menu-panel {
+  position: absolute; top: 0; left: 0; bottom: 0;
+  width: 78%; max-width: 300px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  transform: translateX(-100%);
+  transition: transform var(--transition);
+  padding: 60px 28px 40px;
+  display: flex; flex-direction: column;
+  gap: 0;
+}
+.side-menu.open .menu-panel { transform: translateX(0); }
+
+.menu-profile {
+  display: flex; align-items: center; gap: 14px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+.menu-avatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; color: var(--text); font-weight: 600;
+}
+.menu-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px; font-weight: 400; color: var(--text);
+}
+.menu-version { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.menu-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(42,122,114,0.08);
+  cursor: pointer;
+  font-size: 15px; color: var(--text-dim);
+  transition: color 0.2s;
+}
+.menu-item:hover { color: var(--sage); }
+.menu-item svg { width: 18px; height: 18px; opacity: 0.7; }
+.menu-footer {
+  margin-top: auto;
+  font-size: 11px; color: var(--text-muted);
+  text-align: center; line-height: 1.6;
+}
+
+/* ── HOME SCREEN ── */
+#home-screen { transform: translateX(0); }
+
+.home-hero {
+  position: relative; height: 280px; overflow: hidden;
+}
+.home-hero img {
+  width: 100%; height: 100%; object-fit: cover;
+  filter: brightness(0.55);
+}
+.hero-gradient {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(7,19,28,0.2) 0%, rgba(7,19,28,0.95) 100%);
+}
+.hero-content {
+  position: absolute; bottom: 28px; left: 24px; right: 24px;
+}
+.hero-greeting {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px; font-weight: 300; color: var(--text);
+  line-height: 1.1; margin-bottom: 6px;
+}
+.hero-sub {
+  font-size: 13px; color: var(--sage-dim); letter-spacing: 1px;
+}
+
+.section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 400;
+  color: var(--text); margin: 0 24px 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(to right, var(--border), transparent);
+}
+
+/* Intention card */
+.intention-card {
+  margin: 24px 20px 20px;
+  background: linear-gradient(135deg, rgba(42,122,114,0.15), rgba(42,122,114,0.05));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  position: relative; overflow: hidden;
+}
+.intention-card::before {
+  content: '\201C';
+  position: absolute; top: -10px; left: 14px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 80px; color: var(--teal); opacity: 0.3;
+  line-height: 1;
+}
+.intention-label {
+  font-size: 10px; letter-spacing: 2px;
+  color: var(--sage); text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.intention-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px; font-style: italic;
+  color: var(--text); line-height: 1.6;
+}
+.intention-author {
+  font-size: 11px; color: var(--text-dim);
+  margin-top: 8px;
+}
+
+/* Stats row */
+.stats-row {
+  display: flex; gap: 12px;
+  margin: 0 20px 24px;
+}
+.stat-card {
+  flex: 1; background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px;
+  text-align: center;
+}
+.stat-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px; font-weight: 600;
+  color: var(--sage); line-height: 1;
+}
+.stat-label { font-size: 10px; color: var(--text-muted); margin-top: 4px; letter-spacing: 0.5px; }
+
+/* Session cards */
+.sessions-grid {
+  display: flex; flex-direction: column;
+  gap: 14px; margin: 0 20px;
+}
+.session-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden; cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+  display: flex; height: 110px;
+  position: relative;
+}
+.session-card:active { transform: scale(0.98); }
+.session-card-img {
+  width: 110px; height: 110px; flex-shrink: 0;
+  object-fit: cover; filter: brightness(0.75);
+}
+.session-card-body {
+  padding: 14px 16px; flex: 1;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.session-card-category {
+  font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--sage);
+}
+.session-card-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px; font-weight: 400; color: var(--text);
+  line-height: 1.2; margin: 4px 0;
+}
+.session-card-meta {
+  display: flex; align-items: center; gap: 10px;
+}
+.session-duration {
+  font-size: 11px; color: var(--text-dim);
+  display: flex; align-items: center; gap: 4px;
+}
+.session-level {
+  font-size: 9px; padding: 3px 8px;
+  border-radius: 20px; background: rgba(42,122,114,0.2);
+  color: var(--sage); letter-spacing: 0.5px;
+}
+.session-card-arrow {
+  position: absolute; right: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+/* ── SESSION DETAIL SCREEN ── */
+.detail-hero {
+  position: relative; height: 260px; overflow: hidden;
+}
+.detail-hero img {
+  width: 100%; height: 100%; object-fit: cover;
+  filter: brightness(0.5);
+}
+.detail-hero-gradient {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(7,19,28,0.3) 0%, rgba(7,19,28,1) 100%);
+}
+.back-btn {
+  position: absolute; top: 20px; left: 20px;
+  background: rgba(13,31,45,0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text);
+}
+.detail-category {
+  position: absolute; top: 20px; right: 20px;
+  background: rgba(42,122,114,0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(42,122,114,0.4);
+  border-radius: 20px; padding: 5px 14px;
+  font-size: 10px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--sage);
+}
+
+.detail-content { padding: 0 24px 24px; }
+.detail-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 34px; font-weight: 300;
+  color: var(--text); line-height: 1.1;
+  margin-bottom: 6px;
+}
+.detail-meta-row {
+  display: flex; gap: 16px; margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.detail-meta-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-dim);
+}
+.detail-meta-item svg { width: 14px; height: 14px; color: var(--sage); }
+
+.detail-section-title {
+  font-size: 10px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--sage);
+  margin-bottom: 10px;
+}
+.detail-description {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px; line-height: 1.8;
+  color: var(--text-dim); margin-bottom: 24px;
+}
+
+.detail-benefits {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px;
+  margin-bottom: 24px;
+}
+.benefit-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(42,122,114,0.08);
+  font-size: 13px; color: var(--text-dim); line-height: 1.5;
+}
+.benefit-item:last-child { border-bottom: none; }
+.benefit-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--sage); flex-shrink: 0; margin-top: 5px;
+}
+
+.detail-steps {
+  margin-bottom: 24px;
+}
+.step-item {
+  display: flex; gap: 16px; margin-bottom: 16px;
+}
+.step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid var(--teal);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--sage); flex-shrink: 0;
+  font-family: 'Cormorant Garamond', serif;
+}
+.step-text {
+  font-size: 13px; color: var(--text-dim);
+  line-height: 1.6; padding-top: 4px;
+}
+
+.start-btn {
+  width: 100%; padding: 18px;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  border: none; border-radius: var(--radius);
+  color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 15px; font-weight: 500;
+  letter-spacing: 1px; cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.start-btn:active { opacity: 0.85; transform: scale(0.99); }
+
+/* ── SESSIONS LIST SCREEN ── */
+.screen-header {
+  padding: 60px 24px 20px;
+  background: linear-gradient(to bottom, var(--bg2), var(--bg));
+}
+.screen-header-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px; font-weight: 300; color: var(--text);
+}
+.screen-header-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+.filter-pills {
+  display: flex; gap: 8px; overflow-x: auto;
+  padding: 0 20px 20px; scrollbar-width: none;
+}
+.filter-pills::-webkit-scrollbar { display: none; }
+.pill {
+  flex-shrink: 0; padding: 7px 16px;
+  border-radius: 20px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-dim);
+  font-size: 12px; cursor: pointer;
+  transition: all 0.2s; white-space: nowrap;
+  font-family: 'DM Sans', sans-serif;
+}
+.pill.active {
+  background: var(--teal); border-color: var(--teal);
+  color: var(--text);
+}
+
+.all-sessions { padding: 0 20px; display: flex; flex-direction: column; gap: 14px; }
+
+/* ── HISTORY SCREEN ── */
+.history-content { padding: 0 20px; }
+
+.graph-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  margin-bottom: 16px;
+}
+.graph-title {
+  font-size: 11px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--sage);
+  margin-bottom: 16px;
+}
+
+/* Bar chart */
+.bar-chart {
+  display: flex; align-items: flex-end;
+  gap: 6px; height: 100px;
+}
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bar {
+  width: 100%; border-radius: 4px 4px 0 0;
+  background: linear-gradient(to top, var(--teal), var(--teal-light));
+  transition: height 0.6s cubic-bezier(0.4,0,0.2,1);
+  min-height: 4px;
+}
+.bar.empty { background: var(--bg3); }
+.bar-label { font-size: 9px; color: var(--text-muted); }
+
+/* Line chart */
+.line-chart { position: relative; height: 100px; }
+.line-chart svg { width: 100%; height: 100%; overflow: visible; }
+
+.history-log { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+.log-item {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px;
+}
+.log-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--teal); flex-shrink: 0;
+}
+.log-info { flex: 1; }
+.log-name { font-size: 14px; color: var(--text); margin-bottom: 2px; }
+.log-date { font-size: 11px; color: var(--text-muted); }
+.log-duration {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px; color: var(--sage);
+}
+
+.empty-state {
+  text-align: center; padding: 60px 20px;
+  color: var(--text-muted);
+}
+.empty-state svg { width: 48px; height: 48px; opacity: 0.3; margin-bottom: 16px; }
+.empty-state p { font-size: 14px; line-height: 1.6; }
+
+/* ── COMPLETION MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 800;
+  background: rgba(7,19,28,0.85);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+  padding: 20px;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 24px; padding: 32px 24px;
+  text-align: center; width: 100%;
+  transform: translateY(20px);
+  transition: transform 0.3s;
+}
+.modal-overlay.open .modal-card { transform: translateY(0); }
+.modal-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px; font-size: 28px;
+}
+.modal-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px; color: var(--text); margin-bottom: 8px;
+}
+.modal-sub { font-size: 13px; color: var(--text-dim); margin-bottom: 24px; line-height: 1.6; }
+.modal-btn {
+  width: 100%; padding: 16px;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  border: none; border-radius: 14px;
+  color: var(--text); font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer; margin-bottom: 10px;
+}
+.modal-btn-ghost {
+  width: 100%; padding: 14px;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 14px; color: var(--text-dim);
+  font-size: 14px; font-family: 'DM Sans', sans-serif; cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<!-- ══ SIDE MENU ══ -->
+<div class="side-menu" id="sideMenu">
+  <div class="menu-overlay" onclick="closeMenu()"></div>
+  <div class="menu-panel">
+    <!-- Zenith logo in menu -->
+    <div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid rgba(42,122,114,0.15)">
+      <svg width="130" viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg">
+        <defs><clipPath id="mc"><circle cx="100" cy="100" r="92"/></clipPath></defs>
+        <circle cx="100" cy="100" r="92" fill="#0d2d26"/>
+        <circle cx="100" cy="100" r="92" fill="none" stroke="#2a7a72" stroke-width="2"/>
+        <g clip-path="url(#mc)">
+          <circle cx="148" cy="62" r="24" fill="#1a4a40"/>
+          <circle cx="164" cy="62" r="24" fill="#0b1f2e"/>
+          <circle cx="48" cy="42" r="1.5" fill="#7ec8b8"/><circle cx="68" cy="30" r="1" fill="#7ec8b8"/><circle cx="160" cy="35" r="1.2" fill="#7ec8b8"/>
+          <polygon points="100,28 30,128 170,128" fill="#1e5c52"/>
+          <polygon points="100,28 94,128 106,128" fill="#3a9688"/>
+          <polygon points="30,128 8,180 100,180" fill="#143d35"/>
+          <polygon points="170,128 192,180 100,180" fill="#143d35"/>
+          <rect x="8" y="128" width="184" height="4" fill="#061318"/>
+          <rect x="8" y="132" width="184" height="60" fill="#0d2d26"/>
+          <path d="M8,145 Q55,138 100,145 Q145,152 192,145" fill="none" stroke="#2a7a72" stroke-width="1.2" opacity="0.6"/>
+        </g>
+        <text x="210" y="90" font-family="Georgia,serif" font-size="62" font-weight="300" fill="#e0f2ef" letter-spacing="10">ZENITH</text>
+        <text x="212" y="118" font-family="Georgia,serif" font-size="18" fill="#5aada0" letter-spacing="5">MINDFULNESS</text>
+      </svg>
+    </div>
+    <div class="menu-profile">
+      <div class="menu-avatar">G</div>
+      <div>
+        <div class="menu-name">Grandeur Edem</div>
+        <div class="menu-version">Zenith v1.0.0</div>
+      </div>
+    </div>
+    <div class="menu-item" onclick="navigate('home'); closeMenu()">
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.5 1.5 0 012.092 0L22.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
+      Home
+    </div>
+    <div class="menu-item" onclick="navigate('sessions'); closeMenu()">
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>
+      All Sessions
+    </div>
+    <div class="menu-item" onclick="navigate('history'); closeMenu()">
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+      History
+    </div>
+    <div class="menu-footer">
+      Made with 🌿 for mindfulness<br/>
+      © 2025 Zenith · Personal Edition
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOME SCREEN ══ -->
+<div class="screen active" id="home-screen">
+  <button class="hamburger-btn" onclick="openMenu()" style="position:absolute;top:20px;left:20px;z-index:100">
+    <span></span><span></span><span></span>
+  </button>
+
+  <div class="home-hero">
+    <img src="https://images.unsplash.com/photo-1545389336-cf090694435e?w=800" alt="Zen mountains"/>
+    <div class="hero-gradient"></div>
+    <div class="hero-content">
+      <div class="hero-greeting" id="greetingText">Good morning</div>
+      <div class="hero-sub">✦ take a breath · be present ✦</div>
+    </div>
+    <!-- Logo watermark -->
+    <div style="position:absolute;top:18px;right:18px;opacity:0.85">
+      <svg width="90" viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg">
+        <defs><clipPath id="hc"><circle cx="100" cy="100" r="92"/></clipPath></defs>
+        <circle cx="100" cy="100" r="92" fill="#0b1f2e" opacity="0.7"/>
+        <circle cx="100" cy="100" r="92" fill="none" stroke="#2a7a72" stroke-width="2"/>
+        <g clip-path="url(#hc)">
+          <rect x="8" y="8" width="184" height="184" fill="#0b1f2e" opacity="0.5"/>
+          <circle cx="148" cy="62" r="24" fill="#1a4a40"/>
+          <circle cx="164" cy="62" r="24" fill="#0b1f2e" opacity="0.85"/>
+          <circle cx="48" cy="42" r="1.5" fill="#7ec8b8"/><circle cx="68" cy="30" r="1" fill="#7ec8b8"/><circle cx="160" cy="35" r="1.2" fill="#7ec8b8"/><circle cx="38" cy="72" r="1" fill="#7ec8b8"/>
+          <polygon points="100,28 30,128 170,128" fill="#1e5c52"/>
+          <polygon points="100,28 94,128 106,128" fill="#3a9688"/>
+          <polygon points="30,128 8,180 100,180" fill="#143d35"/>
+          <polygon points="170,128 192,180 100,180" fill="#143d35"/>
+          <rect x="8" y="128" width="184" height="4" fill="#061318"/>
+          <rect x="8" y="132" width="184" height="60" fill="#0d2d26" opacity="0.8"/>
+          <path d="M8,145 Q55,138 100,145 Q145,152 192,145" fill="none" stroke="#2a7a72" stroke-width="1.2" opacity="0.6"/>
+        </g>
+        <text x="210" y="90" font-family="Georgia,serif" font-size="62" font-weight="300" fill="#e0f2ef" letter-spacing="10">ZENITH</text>
+        <text x="212" y="118" font-family="Georgia,serif" font-size="18" fill="#5aada0" letter-spacing="5">MINDFULNESS</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="intention-card">
+    <div class="intention-label">Today's Intention</div>
+    <div class="intention-text" id="dailyQuote">"The present moment is the only moment available to us, and it is the door to all moments."</div>
+    <div class="intention-author" id="dailyAuthor">— Thich Nhat Hanh</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num" id="statSessions">0</div>
+      <div class="stat-label">SESSIONS</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statMinutes">0</div>
+      <div class="stat-label">MINUTES</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statStreak">0</div>
+      <div class="stat-label">DAY STREAK</div>
+    </div>
+  </div>
+
+  <div class="section-title">Featured Sessions</div>
+  <div class="sessions-grid" id="featuredSessions"></div>
+  <div style="height:16px"></div>
+</div>
+
+<!-- ══ SESSION DETAIL SCREEN ══ -->
+<div class="screen" id="detail-screen">
+  <div class="detail-hero">
+    <img id="detailImg" src="" alt="Session"/>
+    <div class="detail-hero-gradient"></div>
+    <button class="back-btn" onclick="goBack()">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+    </button>
+    <div class="detail-category" id="detailCategory">Breathing</div>
+  </div>
+
+  <div class="detail-content">
+    <div style="margin-bottom:20px">
+      <div class="detail-title" id="detailTitle">Breathing Exercise</div>
+      <div class="detail-meta-row">
+        <div class="detail-meta-item">
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
+          <span id="detailDuration">5 mins</span>
+        </div>
+        <div class="detail-meta-item">
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625z"/></svg>
+          <span id="detailLevel">Beginner</span>
+        </div>
+        <div class="detail-meta-item">
+          <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+          <span id="detailCategory2">Mindfulness</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-section-title">About this session</div>
+    <div class="detail-description" id="detailDescription">A full description appears here.</div>
+
+    <div class="detail-section-title">Benefits</div>
+    <div class="detail-benefits" id="detailBenefits"></div>
+
+    <div class="detail-section-title">How to practice</div>
+    <div class="detail-steps" id="detailSteps"></div>
+
+    <button class="start-btn" id="startBtn" onclick="completeSession()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
+      Mark as Complete
+    </button>
+  </div>
+</div>
+
+<!-- ══ SESSIONS LIST SCREEN ══ -->
+<div class="screen" id="sessions-screen">
+  <button class="hamburger-btn" onclick="openMenu()">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="screen-header" style="padding-left:72px">
+    <div class="screen-header-title">Sessions</div>
+    <div class="screen-header-sub" id="sessionsCount">50 guided practices</div>
+  </div>
+  <div class="filter-pills" id="filterPills"></div>
+  <div class="all-sessions" id="allSessionsList"></div>
+  <div style="height:16px"></div>
+</div>
+
+<!-- ══ HISTORY SCREEN ══ -->
+<div class="screen" id="history-screen">
+  <button class="hamburger-btn" onclick="openMenu()">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="screen-header" style="padding-left:72px">
+    <div class="screen-header-title">History</div>
+    <div class="screen-header-sub">Your mindfulness journey</div>
+  </div>
+  <div class="history-content">
+    <div class="graph-card">
+      <div class="graph-title">Sessions per day — this week</div>
+      <div class="bar-chart" id="barChart"></div>
+    </div>
+    <div class="graph-card">
+      <div class="graph-title">Minutes meditated — last 7 days</div>
+      <div class="line-chart">
+        <svg id="lineChart" viewBox="0 0 300 100" preserveAspectRatio="none"></svg>
+      </div>
+    </div>
+    <div class="section-title" style="margin:20px 0 14px">Completed Sessions</div>
+    <div class="history-log" id="historyLog"></div>
+  </div>
+</div>
+
+<!-- ══ BOTTOM NAV ══ -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="navigate('home')" id="nav-home">
+    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.5 1.5 0 012.092 0L22.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
+    Home
+  </button>
+  <button class="nav-btn" onclick="navigate('sessions')" id="nav-sessions">
+    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>
+    Sessions
+  </button>
+  <button class="nav-btn" onclick="navigate('history')" id="nav-history">
+    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+    History
+  </button>
+</nav>
+
+<!-- ══ COMPLETION MODAL ══ -->
+<div class="modal-overlay" id="completionModal">
+  <div class="modal-card">
+    <div class="modal-icon">🌿</div>
+    <div class="modal-title">Well done</div>
+    <div class="modal-sub" id="modalSub">You've completed a session. Take a moment to notice how you feel.</div>
+    <button class="modal-btn" onclick="closeModal()">Continue</button>
+    <button class="modal-btn-ghost" onclick="closeModal()">Back to Home</button>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const QUOTES = [
+  { text: "The present moment is the only moment available to us, and it is the door to all moments.", author: "Thich Nhat Hanh" },
+  { text: "Feelings come and go like clouds in a windy sky. Conscious breathing is my anchor.", author: "Thich Nhat Hanh" },
+  { text: "The mind is like water. When it's turbulent, it's difficult to see. When it's calm, everything becomes clear.", author: "Prasad Mahes" },
+  { text: "You are the sky. Everything else is just the weather.", author: "Pema Chödrön" },
+  { text: "Almost everything will work again if you unplug it for a few minutes, including you.", author: "Anne Lamott" },
+  { text: "Nowhere can man find a quieter or more untroubled retreat than in his own soul.", author: "Marcus Aurelius" },
+  { text: "The thing about meditation is: you become more and more you.", author: "David Lynch" },
+];
+
+const SESSIONS = [
+  { id:1, name:"Breathing Exercise", category:"Breathing", duration:"5 mins", durationMins:5, level:"Beginner", img:"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800", description:"A simple yet powerful guided breathing session designed to calm your nervous system and bring you into the present moment. This practice uses the 4-7-8 breathing technique to activate your body's natural relaxation response, reducing stress and anxiety while improving focus and clarity.", benefits:["Reduces cortisol and stress hormones","Activates the parasympathetic nervous system","Improves oxygen flow to the brain","Creates a sense of calm and groundedness"], steps:["Find a comfortable seated position with your spine tall","Close your eyes and relax your shoulders","Inhale slowly through your nose for 4 counts","Hold your breath gently for 7 counts","Exhale completely through your mouth for 8 counts","Repeat this cycle 4 times"] },
+  { id:2, name:"Body Scan", category:"Relaxation", duration:"10 mins", durationMins:10, level:"Beginner", img:"https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=800", description:"A systematic meditation practice where you gently direct attention through different parts of your body, releasing tension and cultivating deep awareness. This practice is rooted in MBSR (Mindfulness-Based Stress Reduction) and is widely used for managing chronic pain, insomnia, and anxiety.", benefits:["Releases physical tension held in the body","Improves body awareness and mind-body connection","Promotes deep relaxation and better sleep","Reduces symptoms of anxiety and chronic pain"], steps:["Lie down or sit in a comfortable position","Close your eyes and take three deep breaths","Begin by bringing awareness to the top of your head","Slowly move attention downward — face, neck, shoulders","Continue through chest, abdomen, arms, hands","Move through your hips, legs, and finally your feet"] },
+  { id:3, name:"Morning Mindfulness", category:"Mindfulness", duration:"7 mins", durationMins:7, level:"Beginner", img:"https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=800", description:"Start your day with clarity, intention, and calm. This morning practice combines gentle breath awareness with open monitoring meditation to set a positive, focused tone for the day ahead. It's designed to be your daily ritual before the noise of the day begins.", benefits:["Sets a calm, intentional tone for the day","Improves focus and mental clarity","Cultivates gratitude and positive mindset","Reduces morning anxiety and mental fog"], steps:["Sit up in bed or on the floor before checking your phone","Take 5 slow breaths to arrive in your body","Set one intention for the day silently","Spend 3 minutes observing your thoughts without judgment","Close with 3 deep breaths and a smile"] },
+  { id:4, name:"Deep Rest", category:"Relaxation", duration:"15 mins", durationMins:15, level:"Intermediate", img:"https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800", description:"A deeply restorative session inspired by Yoga Nidra — a state of conscious sleep that sits between wakefulness and deep sleep. This practice is known to be as restorative as several hours of sleep and is ideal for periods of high stress, burnout, or physical fatigue.", benefits:["Deeply restores the nervous system","Equivalent rest to 2-3 hours of sleep","Clears mental fatigue and emotional heaviness","Activates the body's natural healing processes"], steps:["Lie flat on your back with arms at your sides","Set an intention (sankalpa) for your practice","Follow the rotation of awareness through body parts","Allow yourself to drift into a deeply relaxed state","Maintain a thread of awareness without sleeping","Return gradually with deep breaths and gentle movement"] },
+  { id:5, name:"Loving Kindness", category:"Compassion", duration:"12 mins", durationMins:12, level:"Intermediate", img:"https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=800", description:"Metta meditation, or Loving Kindness, is a heart-opening practice of silently directing warm wishes toward yourself and others. Research shows regular practice increases empathy, reduces self-criticism, and builds emotional resilience over time.", benefits:["Cultivates self-compassion and reduces self-criticism","Increases empathy and social connection","Builds emotional resilience and positivity","Reduces depression and loneliness"], steps:["Sit comfortably and close your eyes","Begin with yourself — repeat: 'May I be happy. May I be well.'","Expand to a loved one, wishing them the same","Include a neutral person, then a difficult one","Finally expand to all living beings everywhere","Rest in the warm feeling generated"] },
+  { id:6, name:"Mindful Walking", category:"Movement", duration:"10 mins", durationMins:10, level:"Beginner", img:"https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800", description:"Transform an ordinary walk into a moving meditation. This practice anchors your awareness in the physical sensations of walking — the feel of the ground, the movement of your legs, the rhythm of your breath — turning each step into an act of presence.", benefits:["Combines movement and mindfulness","Accessible anywhere, anytime","Improves mind-body coordination","Great alternative for those who struggle with stillness"], steps:["Begin walking at a slower pace than usual","Feel the contact of each foot with the ground","Notice the movement — heel, arch, toes lifting","Coordinate your breath with your steps","When the mind wanders, return to the sensation of walking","End with a moment of stillness and gratitude"] },
+  { id:7, name:"Focus Flow", category:"Focus", duration:"8 mins", durationMins:8, level:"Beginner", img:"https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800", description:"A concentration practice designed to sharpen mental focus before work, study, or any demanding task. Using single-pointed attention on the breath, this session trains the mind to resist distraction and return to the present moment — the foundation of deep work.", benefits:["Sharpens concentration and attention span","Prepares the mind for deep focused work","Reduces distractibility and mental chatter","Builds the neural pathways for sustained attention"], steps:["Sit upright in your chair or on the floor","Choose one anchor — the breath at your nostrils","Narrow your attention to this single sensation","When distracted, note 'thinking' and return","Make each return a moment of success, not failure","End with 3 deep breaths before beginning your work"] },
+  { id:8, name:"Evening Wind Down", category:"Sleep", duration:"12 mins", durationMins:12, level:"Beginner", img:"https://images.unsplash.com/photo-1475274047050-1d0c0975c63e?w=800", description:"A gentle transition ritual for the end of your day. This practice combines slow breathing, gratitude reflection, and progressive muscle relaxation to guide your mind and body from the activity of the day into a state of deep, restful calm — preparing you for quality sleep.", benefits:["Signals the brain that the day is complete","Reduces nighttime anxiety and racing thoughts","Improves sleep onset and sleep quality","Provides a healthy boundary between day and night"], steps:["Dim the lights and lie down comfortably","Take 5 slow, sighing breaths to release the day","Reflect on 3 things you are grateful for","Tense each muscle group for 5 seconds, then release","Allow your body to feel heavy and sinking","Let thoughts pass like clouds without engaging them"] },
+  { id:9, name:"Anxiety Relief", category:"Healing", duration:"9 mins", durationMins:9, level:"Beginner", img:"https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=800", description:"A targeted practice for moments of acute anxiety or overwhelm. This session uses grounding techniques (5-4-3-2-1 sensory method), diaphragmatic breathing, and cognitive defusion to help you step out of the anxiety spiral and return to a sense of safety.", benefits:["Interrupts the anxiety response quickly","Grounds you in the physical present moment","Reduces physical symptoms like racing heart","Builds long-term anxiety resilience"], steps:["Name 5 things you can see around you","Name 4 things you can physically feel","Name 3 things you can hear","Name 2 things you can smell","Name 1 thing you can taste","Breathe deeply — you are safe right now"] },
+  { id:10, name:"Gratitude Practice", category:"Mindfulness", duration:"6 mins", durationMins:6, level:"Beginner", img:"https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800", description:"A short but powerful daily practice that rewires your brain toward noticing the positive. Gratitude meditation has been shown in neuroscience research to increase dopamine, strengthen relationships, improve physical health, and build long-term happiness.", benefits:["Rewires the brain toward positive emotion","Increases dopamine and serotonin naturally","Strengthens sense of meaning and connection","Reduces negativity bias over time"], steps:["Sit quietly and close your eyes","Bring to mind one person you are grateful for","Feel the warmth of that gratitude in your chest","Recall one moment from today that was good","Find gratitude for your body and its function","Close by sending thanks to yourself for practicing"] },
+  { id:11, name:"Inner Silence", category:"Advanced", duration:"20 mins", durationMins:20, level:"Advanced", img:"https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800", description:"A deep, unguided silent meditation for practitioners ready to sit without instruction. In this space you simply observe — thoughts, sensations, emotions — without judgment, attachment, or resistance. This is where the deepest insights arise.", benefits:["Develops profound inner stillness","Builds the capacity to sit with discomfort","Reveals the nature of the observing mind","Gateway to deeper states of consciousness"], steps:["Set a timer for 20 minutes","Sit in your most comfortable meditation posture","Close your eyes and take 3 settling breaths","Simply observe whatever arises — thoughts, sounds, sensations","Do not try to create any particular state","When the timer sounds, remain still for one more minute before opening your eyes"] },
+  { id:12, name:"Breath of Fire", category:"Breathing", duration:"5 mins", durationMins:5, level:"Intermediate", img:"https://images.unsplash.com/photo-1528715471579-d1bcf0ba5e83?w=800", description:"An energizing pranayama technique from the Kundalini yoga tradition. Breath of Fire consists of rapid, rhythmic breathing through the nose that generates heat, energy, and mental alertness. It is an excellent practice to replace coffee in the morning or combat afternoon fatigue.", benefits:["Increases energy and mental alertness","Clears stagnant energy from the body","Strengthens the respiratory system","Detoxifies the blood and lymph system"], steps:["Sit tall with your spine erect","Begin rapid, rhythmic breathing through the nose","Emphasize the exhale — the inhale is passive","Start slowly and build to 2-3 breaths per second","Continue for 1-3 minutes","End with a deep inhale, hold, then slowly exhale"] },
+];
+
+// Generate more sessions to reach 50
+const EXTRA_SESSIONS = [
+  { id:13, name:"Chakra Balance", category:"Advanced", duration:"18 mins", durationMins:18, level:"Advanced", img:"https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800", description:"A visualization journey through the seven energy centers of the body, bringing balance and vitality to each chakra from root to crown.", benefits:["Balances energy centers","Increases vitality","Enhances spiritual awareness","Promotes emotional healing"], steps:["Sit in lotus or cross-legged position","Visualize a red light at the base of your spine","Breathe into each chakra moving upward","Spend 2 minutes on each energy center","Visualize each center glowing with its color","Complete with white light filling your entire being"] },
+  { id:14, name:"Rain Sounds", category:"Relaxation", duration:"15 mins", durationMins:15, level:"Beginner", img:"https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=800", description:"A deeply relaxing session using the sound of rain as your meditation anchor. Rain is one of the most effective natural sounds for inducing a calm, meditative state.", benefits:["Uses nature sounds as meditation anchor","Deeply calming and sleep-promoting","No experience required","Can be practiced lying down"], steps:["Find a comfortable position lying down","Close your eyes and take 5 deep breaths","Bring all attention to imagined rain sounds","Let the rhythm of rain carry your breath","Allow thoughts to dissolve into the rain","Rest completely for the duration"] },
+  { id:15, name:"Visualization Journey", category:"Mindfulness", duration:"10 mins", durationMins:10, level:"Intermediate", img:"https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=800", description:"A guided visualization that transports you to a peaceful inner sanctuary — a personal place of calm and safety that you can return to anytime through meditation.", benefits:["Creates a personal inner refuge","Reduces stress rapidly","Strengthens creative imagination","Accessible anywhere in stressful moments"], steps:["Close your eyes and take 5 slow breaths","Imagine walking through a forest path","Notice the details — light, sounds, temperature","Find a clearing with a peaceful sanctuary","Spend time in this safe place","Return slowly, carrying the peace with you"] },
+];
+
+const ALL_SESSIONS = [...SESSIONS, ...EXTRA_SESSIONS];
+
+// Fill to 50 with generated sessions
+const CATEGORIES = ["Breathing", "Relaxation", "Mindfulness", "Focus", "Sleep", "Healing", "Compassion", "Movement", "Advanced"];
+const LEVELS = ["Beginner", "Intermediate", "Advanced"];
+const IMGS = [
+  "https://images.unsplash.com/photo-1476611338391-6f395a0ebc7b?w=800",
+  "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800",
+  "https://images.unsplash.com/photo-1506126279646-a697353d3166?w=800",
+  "https://images.unsplash.com/photo-1532798442725-41036acc7489?w=800",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800",
+  "https://images.unsplash.com/photo-1519834785169-98be25ec3f84?w=800",
+  "https://images.unsplash.com/photo-1508672019048-805c876b67e2?w=800",
+  "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800",
+];
+const NAMES = ["Forest Bathing","Ocean Breath","Sky Gazing","Mountain Stillness","River Flow","Dawn Ritual","Dusk Reflection","Heart Opening","Root Grounding","Clarity Practice","Peace Within","Stillness Ritual","Gentle Awareness","Soft Focus","Open Sky","Empty Mind","Pure Presence","Ease Practice","Surrender Flow","Harmony Session","Balance Point","Center Finding","Deep Listening","Quiet Mind","Still Waters","Inner Garden","Peaceful Heart","Clear Seeing","Gentle Return","Open Awareness","Tender Presence","Effortless Being","Natural Rest","Spacious Mind","Boundless Heart","Radiant Calm"];
+
+for (let i = ALL_SESSIONS.length + 1; i <= 50; i++) {
+  const name = NAMES[i % NAMES.length];
+  const cat = CATEGORIES[i % CATEGORIES.length];
+  const dur = [5,7,8,10,12,15][i % 6];
+  ALL_SESSIONS.push({
+    id: i, name, category: cat,
+    duration: `${dur} mins`, durationMins: dur,
+    level: LEVELS[i % 3],
+    img: IMGS[i % IMGS.length],
+    description: `A ${dur}-minute ${cat.toLowerCase()} practice to cultivate presence, calm, and inner clarity. This session is suitable for ${LEVELS[i%3].toLowerCase()} practitioners and can be done at any time of day.`,
+    benefits: ["Cultivates present-moment awareness","Reduces mental and physical tension","Builds a consistent mindfulness habit","Supports overall emotional wellbeing"],
+    steps: ["Find a comfortable position and close your eyes","Take three deep settling breaths","Bring your attention to the present moment","Gently observe what arises without judgment","When distracted, return to your breath anchor","Close with gratitude for your practice"]
+  });
+}
+
+// ── STATE ──
+let history = JSON.parse(localStorage.getItem('zenith_history') || '[]');
+let currentScreen = 'home';
+let prevScreen = 'home';
+let currentSession = null;
+let activeFilter = 'All';
+
+// ── NAVIGATION ──
+function navigate(screen) {
+  const old = document.getElementById(currentScreen + '-screen');
+  const next = document.getElementById(screen + '-screen');
+  if (!next || screen === currentScreen) return;
+
+  old.classList.add('slide-left');
+  next.classList.add('active');
+  setTimeout(() => { old.classList.remove('active','slide-left'); }, 380);
+
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const nb = document.getElementById('nav-' + screen);
+  if (nb) nb.classList.add('active');
+
+  prevScreen = currentScreen;
+  currentScreen = screen;
+
+  if (screen === 'sessions') renderAllSessions();
+  if (screen === 'history') renderHistory();
+  if (screen === 'home') updateStats();
+}
+
+function openDetail(sessionId) {
+  const s = ALL_SESSIONS.find(x => x.id === sessionId);
+  if (!s) return;
+  currentSession = s;
+
+  document.getElementById('detailImg').src = s.img;
+  document.getElementById('detailCategory').textContent = s.category;
+  document.getElementById('detailTitle').textContent = s.name;
+  document.getElementById('detailDuration').textContent = s.duration;
+  document.getElementById('detailLevel').textContent = s.level;
+  document.getElementById('detailCategory2').textContent = s.category;
+  document.getElementById('detailDescription').textContent = s.description;
+
+  const benefitsEl = document.getElementById('detailBenefits');
+  benefitsEl.innerHTML = s.benefits.map(b => `<div class="benefit-item"><div class="benefit-dot"></div><div>${b}</div></div>`).join('');
+
+  const stepsEl = document.getElementById('detailSteps');
+  stepsEl.innerHTML = s.steps.map((step, i) => `<div class="step-item"><div class="step-num">${i+1}</div><div class="step-text">${step}</div></div>`).join('');
+
+  const old = document.getElementById(currentScreen + '-screen');
+  const next = document.getElementById('detail-screen');
+  old.classList.add('slide-left');
+  next.classList.add('active');
+  setTimeout(() => { old.classList.remove('active','slide-left'); }, 380);
+  prevScreen = currentScreen;
+  currentScreen = 'detail';
+}
+
+function goBack() {
+  const old = document.getElementById('detail-screen');
+  const next = document.getElementById(prevScreen + '-screen');
+  old.classList.remove('active');
+  next.classList.remove('slide-left');
+  currentScreen = prevScreen;
+}
+
+function openMenu() { document.getElementById('sideMenu').classList.add('open'); }
+function closeMenu() { document.getElementById('sideMenu').classList.remove('open'); }
+
+// ── GREETING ──
+function setGreeting() {
+  const h = new Date().getHours();
+  const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greetingText').textContent = g;
+}
+
+// ── QUOTES ──
+function setDailyQuote() {
+  const day = new Date().getDay();
+  const q = QUOTES[day % QUOTES.length];
+  document.getElementById('dailyQuote').textContent = `"${q.text}"`;
+  document.getElementById('dailyAuthor').textContent = `— ${q.author}`;
+}
+
+// ── STATS ──
+function updateStats() {
+  document.getElementById('statSessions').textContent = history.length;
+  const mins = history.reduce((a,b) => a + (b.mins || 0), 0);
+  document.getElementById('statMinutes').textContent = mins;
+  // streak
+  const dates = [...new Set(history.map(h => h.date))].sort().reverse();
+  let streak = 0;
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now()-86400000).toDateString();
+  if (dates.length && (dates[0] === today || dates[0] === yesterday)) {
+    streak = 1;
+    for (let i = 1; i < dates.length; i++) {
+      const diff = (new Date(dates[i-1]) - new Date(dates[i])) / 86400000;
+      if (diff === 1) streak++;
+      else break;
+    }
+  }
+  document.getElementById('statStreak').textContent = streak;
+}
+
+// ── COMPLETE SESSION ──
+function completeSession() {
+  if (!currentSession) return;
+  history.unshift({ id: currentSession.id, name: currentSession.name, mins: currentSession.durationMins, date: new Date().toDateString(), time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) });
+  localStorage.setItem('zenith_history', JSON.stringify(history));
+  document.getElementById('modalSub').textContent = `You completed "${currentSession.name}" (${currentSession.duration}). Take a moment to notice how you feel.`;
+  document.getElementById('completionModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('completionModal').classList.remove('open');
+  navigate('home');
+}
+
+// ── RENDER FEATURED ──
+function renderFeatured() {
+  const el = document.getElementById('featuredSessions');
+  const featured = ALL_SESSIONS.slice(0, 6);
+  el.innerHTML = featured.map(s => sessionCardHTML(s)).join('');
+}
+
+function sessionCardHTML(s) {
+  return `<div class="session-card" onclick="openDetail(${s.id})">
+    <img class="session-card-img" src="${s.img}" alt="${s.name}" loading="lazy"/>
+    <div class="session-card-body">
+      <div class="session-card-category">${s.category}</div>
+      <div class="session-card-name">${s.name}</div>
+      <div class="session-card-meta">
+        <div class="session-duration">
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 6v6l3 2"/></svg>
+          ${s.duration}
+        </div>
+        <div class="session-level">${s.level}</div>
+      </div>
+    </div>
+    <div class="session-card-arrow">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 18l6-6-6-6"/></svg>
+    </div>
+  </div>`;
+}
+
+// ── RENDER ALL SESSIONS ──
+function renderAllSessions() {
+  const cats = ['All', ...new Set(ALL_SESSIONS.map(s => s.category))];
+  document.getElementById('filterPills').innerHTML = cats.map(c =>
+    `<button class="pill ${c === activeFilter ? 'active' : ''}" onclick="filterSessions('${c}')">${c}</button>`
+  ).join('');
+
+  const filtered = activeFilter === 'All' ? ALL_SESSIONS : ALL_SESSIONS.filter(s => s.category === activeFilter);
+  document.getElementById('sessionsCount').textContent = `${filtered.length} guided practice${filtered.length !== 1 ? 's' : ''}`;
+  document.getElementById('allSessionsList').innerHTML = filtered.map(s => sessionCardHTML(s)).join('');
+}
+
+function filterSessions(cat) {
+  activeFilter = cat;
+  renderAllSessions();
+}
+
+// ── RENDER HISTORY ──
+function renderHistory() {
+  // Bar chart — sessions per day this week
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const today = new Date();
+  const weekData = days.map((_, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1) + i);
+    const dateStr = d.toDateString();
+    return history.filter(h => h.date === dateStr).length;
+  });
+  const maxVal = Math.max(...weekData, 1);
+
+  document.getElementById('barChart').innerHTML = days.map((day, i) => {
+    const pct = (weekData[i] / maxVal) * 90;
+    return `<div class="bar-col">
+      <div class="bar ${weekData[i] === 0 ? 'empty' : ''}" style="height:${pct}px"></div>
+      <div class="bar-label">${day}</div>
+    </div>`;
+  }).join('');
+
+  // Line chart — minutes per day last 7 days
+  const minsData = Array.from({length:7}, (_,i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - (6 - i));
+    const dateStr = d.toDateString();
+    return history.filter(h => h.date === dateStr).reduce((a,b) => a + (b.mins||0), 0);
+  });
+  const maxMins = Math.max(...minsData, 1);
+  const pts = minsData.map((v, i) => {
+    const x = (i / 6) * 280 + 10;
+    const y = 90 - (v / maxMins) * 80;
+    return `${x},${y}`;
+  });
+  const svg = document.getElementById('lineChart');
+  svg.innerHTML = `
+    <defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2a7a72" stop-opacity="0.3"/><stop offset="100%" stop-color="#2a7a72" stop-opacity="0"/></linearGradient></defs>
+    <polygon points="${pts.join(' ')} 290,100 10,100" fill="url(#lg)"/>
+    <polyline points="${pts.join(' ')}" fill="none" stroke="#3a9688" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    ${minsData.map((v, i) => {
+      const x = (i / 6) * 280 + 10;
+      const y = 90 - (v / maxMins) * 80;
+      return `<circle cx="${x}" cy="${y}" r="3" fill="#3a9688"/>`;
+    }).join('')}
+  `;
+
+  // Log
+  const logEl = document.getElementById('historyLog');
+  if (history.length === 0) {
+    logEl.innerHTML = `<div class="empty-state">
+      <svg fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <p>No sessions completed yet.<br/>Start a session to see your history here.</p>
+    </div>`;
+  } else {
+    logEl.innerHTML = history.slice(0,20).map(h => `
+      <div class="log-item">
+        <div class="log-dot"></div>
+        <div class="log-info">
+          <div class="log-name">${h.name}</div>
+          <div class="log-date">${h.date} · ${h.time || ''}</div>
+        </div>
+        <div class="log-duration">${h.mins}m</div>
+      </div>
+    `).join('');
+  }
+}
+
+// ── INIT ──
+setGreeting();
+setDailyQuote();
+renderFeatured();
+updateStats();
+</script>
+</body>
+</html>
